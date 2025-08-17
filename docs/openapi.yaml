@@ -1,0 +1,418 @@
+openapi: 3.0.3
+info:
+  title: Postal API
+  version: 1.0.0
+  description: |
+    API documentation for Postal Server. This spec documents existing endpoints without changing behavior.
+servers:
+  - url: http://192.168.1.154:4000
+    description: Local dev server
+tags:
+  - name: Health
+  - name: Root
+  - name: Auth
+  - name: Users
+  - name: Posts
+  - name: Comments
+  - name: Likes
+  - name: Profile
+  - name: Cloudinary
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  database:
+                    type: string
+        '500':
+          description: Database disconnected
+  /api/:
+    get:
+      tags: [Root]
+      summary: API root message
+      responses:
+        '200':
+          description: Root message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+            example:
+              username: themmy
+              email: aladesiuntope@gmail.com
+              password: Password@2
+      responses:
+        '201':
+          description: Registered
+        '400':
+          description: Validation error
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+            example:
+              email: aladesiuntope@gmail.com
+              password: Password@2
+      responses:
+        '200':
+          description: Authenticated
+        '401':
+          description: Invalid credentials
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New tokens
+        '401':
+          description: Unauthorized
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (client-side token discard)
+      responses:
+        '200':
+          description: OK
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List users
+      responses:
+        '200':
+          description: List of users
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Validation error
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User
+        '404':
+          description: Not found
+    put:
+      tags: [Users]
+      summary: Update user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Updated
+        '400':
+          description: Validation error
+        '404':
+          description: Not found
+    delete:
+      tags: [Users]
+      summary: Delete user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+  /api/posts:
+    get:
+      tags: [Posts]
+      summary: List posts with pagination
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            maximum: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of posts
+    post:
+      tags: [Posts]
+      summary: Create a post
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  nullable: true
+                mediaUrl:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Validation error
+  /api/posts/{id}:
+    delete:
+      tags: [Posts]
+      summary: Delete a post
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+  /api/comments:
+    post:
+      tags: [Comments]
+      summary: Create a comment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [postId, text]
+              properties:
+                postId:
+                  type: integer
+                text:
+                  type: string
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Validation error
+  /api/comments/{postId}:
+    get:
+      tags: [Comments]
+      summary: List comments for a post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of comments
+  /api/comments/{id}:
+    delete:
+      tags: [Comments]
+      summary: Delete a comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+  /api/likes/{postId}/toggle:
+    post:
+      tags: [Likes]
+      summary: Toggle like on a post
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Current like state
+  /api/profile/{username}:
+    get:
+      tags: [Profile]
+      summary: Get profile by username
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile
+        '404':
+          description: Not found
+  /api/profile:
+    put:
+      tags: [Profile]
+      summary: Update own profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio:
+                  type: string
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Updated profile
+  /api/profile/{username}/follow:
+    post:
+      tags: [Profile]
+      summary: Follow a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Following
+        '404':
+          description: Not found
+  /api/profile/{username}/unfollow:
+    post:
+      tags: [Profile]
+      summary: Unfollow a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unfollowed
+        '404':
+          description: Not found
+  /api/cloudinary/signature:
+    get:
+      tags: [Cloudinary]
+      summary: Get Cloudinary upload signature
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Signature details
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

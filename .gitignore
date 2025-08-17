@@ -1,0 +1,9 @@
+node_modules/
+.env
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+jwt.private.b64
+jwt.public.b64
+jwtRs256.key
+jwtRs256.key.pub
